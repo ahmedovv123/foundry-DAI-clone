@@ -1,6 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {Auth} from "src/lib/Auth.sol";
+import {CircuitBreaker} from "src/lib/CircuitBreaker.sol";
+
 interface IGem {
     function decimals() external view returns (uint8);
     function transfer(address dst, uint256 wad) external returns (bool);
@@ -11,55 +14,7 @@ interface ICDPEngine { // Collateralized Debt Position
     function modifyCollateralBalance(bytes32, address, int256) external;
 }
 
-contract Auth {
-    event GrantAuthorization(address indexed usr);
-    event DenyAuthorization(address indexed usr);
-
-    // --- Auth ---
-    mapping(address => bool) public authorized;
-
-    constructor() {
-        authorized[msg.sender] = true;
-        emit GrantAuthorization(msg.sender);
-    }
-
-    modifier auth() {
-        require(authorized[msg.sender], "not authorized");
-        _;
-    }
-
-    function grantAuth(address usr) external auth {
-        authorized[usr] = true;
-        emit GrantAuthorization(usr);
-    }
-
-    function denyAuth(address usr) external auth {
-        authorized[usr] = false;
-        emit DenyAuthorization(usr);
-    }
-}
-
-contract CircuitBraker {
-    event Stop();
-
-    bool public live;
-
-    constructor() {
-        live = true;
-    }
-
-    modifier notStopped() {
-        require(live, "not live");
-        _;
-    }
-
-    function _stop() internal {
-        live = false;
-        emit Stop();
-    }
-}
-
-contract GemJoin is Auth, CircuitBraker {
+contract GemJoin is Auth, CircuitBreaker {
     event Join(address indexed usr, uint256 wad);
     event Exit(address indexed usr, uint256 wad);
 
