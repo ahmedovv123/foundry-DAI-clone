@@ -17,6 +17,7 @@ contract CDPEngine is Auth, CircuitBreaker {
         uint256 spot; // Price with Safety Margin  [ray]
         // line
         uint256 maxDebt; // Debt Ceiling              [rad]
+        // dust
         uint256 minDebt; // Urn Debt Floor            [rad]
     }
 
@@ -28,11 +29,33 @@ contract CDPEngine is Auth, CircuitBreaker {
 
     mapping(bytes32 => Collateral) public collaterals;
     mapping(bytes32 id => mapping(address owner => Position position)) public positions;
-
     mapping(bytes32 collateralType => mapping(address user => uint256 balance)) public gem;
     mapping(address => uint256) public coin; // [rad]
-
     mapping(address owner => mapping(address user => bool canModify)) public can;
+
+    uint256 public sysMaxDebt; // Total Debt Ceiling [rad]
+
+    function init(bytes32 colType) external auth {
+        require(collaterals[colType].rateAcc == 0, "Collateral already init");
+        collaterals[colType].rateAcc = 10 ** 27; // rad
+    }
+    // file
+    function set(bytes32 key, uint val) external auth notStopped {
+        if (key == "sysMaxDebt") sysMaxDebt = val;
+        else revert("Key not recognized");
+    }
+    // file
+    function set(bytes32 colType, bytes32 key, uint val) external auth notStopped {
+        if (key == "spot") collaterals[colType].spot = val;
+        else if (key == "maxDebt") collaterals[colType].maxDebt = val;
+        else if (key == "minDebt") collaterals[colType].minDebt = val;
+        else revert("Key not recognized");
+    }
+
+    // cage
+    function stop() external auth {
+        _stop();
+    }
 
     // hope
     function allowAccountModification(address usr) external {
