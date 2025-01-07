@@ -119,8 +119,7 @@ contract CDPEngine is Auth, CircuitBreaker {
 
         // either debt has decreased, or debt ceilings are not exceeded
         require(
-            deltaDebt <= 0 || col.debt * col.rateAcc <= col.maxDebt && sysDebt <= sysMaxDebt,
-            "Vat/ceiling-exceeded"
+            deltaDebt <= 0 || col.debt * col.rateAcc <= col.maxDebt && sysDebt <= sysMaxDebt, "Vat/ceiling-exceeded"
         );
         // pos is either less risky than before, or it is safe
         require((deltaDebt <= 0 && deltaCol >= 0) || (coinDebt <= pos.collateral * col.spot), "Vat/not-safe");
@@ -140,5 +139,14 @@ contract CDPEngine is Auth, CircuitBreaker {
 
         positions[colType][cdp] = pos;
         collaterals[colType] = col;
+    }
+
+    // fold
+    function fold(bytes32 colType, address coinDst, int256 deltaRate) external auth notStopped {
+        Collateral storage col = collaterals[colType];
+        col.rateAcc = Math.add(col.rateAcc, deltaRate);
+        int256 deltaCoin = Math.mul(col.debt, deltaRate);
+        coin[coinDst] = Math.add(coin[coinDst], deltaCoin);
+        sysDebt = Math.add(sysDebt, deltaCoin);
     }
 }
