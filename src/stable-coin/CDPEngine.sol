@@ -5,7 +5,30 @@ import {Auth} from "src/lib/Auth.sol";
 import {CircuitBreaker} from "src/lib/CircuitBreaker.sol";
 import {Math} from "src/lib/Math.sol";
 
+// Vat
 contract CDPEngine is Auth, CircuitBreaker {
+    // Ilk
+    struct Collateral {
+        // Art
+        uint256 debt; // Total Normalised Debt     [wad]
+        // rate
+        uint256 rateAcc; // Accumulated Rates         [ray]
+        // spot
+        uint256 spot; // Price with Safety Margin  [ray]
+        // line
+        uint256 maxDebt; // Debt Ceiling              [rad]
+        uint256 minDebt; // Urn Debt Floor            [rad]
+    }
+
+    // Urn - Vault
+    struct Position {
+        uint256 collateral; // Locked Collateral  [wad]
+        uint256 debt; // Normalised Debt    [wad]
+    }
+
+    mapping(bytes32 => Collateral) public collaterals;
+    mapping(bytes32 id => mapping(address owner => Position position)) public positions;
+
     mapping(bytes32 collateralType => mapping(address user => uint256 balance)) public gem;
     mapping(address => uint256) public coin; // [rad]
 
