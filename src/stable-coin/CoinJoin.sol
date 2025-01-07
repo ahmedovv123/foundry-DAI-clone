@@ -34,12 +34,14 @@ contract CoinJoin is Auth, CircuitBreaker {
     }
 
     function join(address usr, uint256 wad) external {
+        // vat.move
         cdpEngine.transferCoin(address(this), usr, RAY * wad);
         coin.burn(msg.sender, wad);
         emit Join(usr, wad);
     }
 
     function exit(address usr, uint256 wad) external notStopped {
+        // vat.move
         cdpEngine.transferCoin(msg.sender, address(this), RAY * wad);
         coin.mint(usr, wad);
         emit Exit(usr, wad);
